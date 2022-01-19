@@ -263,7 +263,7 @@ Preferences prefs;
 void DrawStatistics(float t, float h, int intervalMinutes)
 {
   intervalSpent += intervalMinutes;
-  if (intervalSpent == intervalMinutes || intervalSpent > gInterval)
+  if (intervalSpent == intervalMinutes || intervalSpent > gInterval || bootCount == 1)
   {
     intervalSpent = intervalMinutes;
     prefs.begin("main");

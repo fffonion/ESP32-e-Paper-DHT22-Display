@@ -85,12 +85,6 @@ void readDHT2Statsd(const char *location)
   blink();
   DrawRSSISection(0);
 
-  IPAddress ip(10, 0, 0, 71);
-  IPAddress gateway(10, 0, 0, 1);
-  IPAddress subnet(255, 255, 255, 0);
-  WiFi.config(ip, gateway, subnet);
-  WiFi.mode(WIFI_OFF);
-
   if (StartWiFi() == WL_CONNECTED)
   {
     blink();
@@ -100,18 +94,18 @@ void readDHT2Statsd(const char *location)
     Udp.beginPacket(STATSD, 9125);
     if (fail)
     {
-      sprintf(buf, "env.dht22_read_failure.%s.esp8266:1|c\n", location);
+      sprintf(buf, "env.dht22_read_failure.%s.esp32:1|c\n", location);
       Udp.write(pbuf, strlen(buf));
     }
     else
     {
-      sprintf(buf, "env.dht22_read_success.%s.esp8266:1|c\n", location);
+      sprintf(buf, "env.dht22_read_success.%s.esp32:1|c\n", location);
       Udp.write(pbuf, strlen(buf));
-      sprintf(buf, "env.temperature_c.%s.esp8266:%.2f|g\n", location, t);
+      sprintf(buf, "env.temperature_c.%s.esp32:%.2f|g\n", location, t);
       Udp.write(pbuf, strlen(buf));
-      sprintf(buf, "env.temperature_f.%s.esp8266:%.2f|g\n", location, f);
+      sprintf(buf, "env.temperature_f.%s.esp32:%.2f|g\n", location, f);
       Udp.write(pbuf, strlen(buf));
-      sprintf(buf, "env.humidity.%s.esp8266:%.2f|g\n", location, h);
+      sprintf(buf, "env.humidity.%s.esp32:%.2f|g\n", location, h);
       Udp.write(pbuf, strlen(buf));
     }
     Udp.endPacket();
@@ -133,6 +127,18 @@ void setup()
   pinMode(LED, OUTPUT);
 
   Serial.println("started");
+
+  if(digitalRead(ALT_BUTTON) == LOW) { // is long press
+    digitalWrite(LED, HIGH);
+    delay(2000);
+    digitalWrite(LED, LOW);
+    // long press shorter than 2s, setup OTA
+    // otherwise we will enter smartconfig reset
+    if(digitalRead(ALT_BUTTON) == HIGH && StartWiFi() == WL_CONNECTED) {
+      SetupOTA();
+      return;
+    } // otherwise, goto smartconfig reset
+  }
 
   esp_sleep_wakeup_cause_t wakeup_reason;
   wakeup_reason = esp_sleep_get_wakeup_cause();
@@ -159,4 +165,5 @@ void setup()
 
 void loop()
 {
+  HandleOTA();
 }
