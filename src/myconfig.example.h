@@ -5,10 +5,12 @@
 
 #define otaPassword "otapassword" // OTA password
 
+#define statsdTag "myhome"
+
 // #define useStaticIP // uncomment to use static IP instead of DHCP
 
-IPAddress ip(10, 0, 0, 71);
-IPAddress gateway(10, 0, 0, 1);
-IPAddress subnet(255, 255, 255, 0);
+#define ip IPAddress(10, 0, 0, 71)
+#define gateway IPAddress(10, 0, 0, 1)
+#define subnet IPAddress(255, 255, 255, 0)
 
 #endif

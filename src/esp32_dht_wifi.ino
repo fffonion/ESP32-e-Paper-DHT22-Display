@@ -8,6 +8,12 @@
 #include "esp32_ctrl.h"
 #include "display.h"
 
+#if __has_include("myconfig.h")
+  #include "myconfig.h"
+#else
+  #include "myconfig.example.h"
+#endif
+
 #define STATSD "10.0.0.50"
 
 #define DHTPIN GPIO_NUM_0 // what pin we're connected to
@@ -120,6 +126,9 @@ void readDHT2Statsd(const char *location)
 
 void setup()
 {
+  WiFi.mode(WIFI_OFF);
+  btStop();
+
   Serial.begin(115200);
   ESP32CtrlStart();
   dht.begin();
@@ -134,10 +143,14 @@ void setup()
     digitalWrite(LED, LOW);
     // long press shorter than 2s, setup OTA
     // otherwise we will enter smartconfig reset
-    if(digitalRead(ALT_BUTTON) == HIGH && StartWiFi() == WL_CONNECTED) {
-      SetupOTA();
-      return;
-    } // otherwise, goto smartconfig reset
+    if(digitalRead(ALT_BUTTON) == HIGH) {
+      DrawRSSISection(0);
+      if (StartWiFi() == WL_CONNECTED) {
+        digitalWrite(LED, HIGH);
+        SetupOTA();
+        return;
+      } // otherwise, goto smartconfig reset
+    }
   }
 
   esp_sleep_wakeup_cause_t wakeup_reason;
@@ -155,7 +168,7 @@ void setup()
   // in deep sleep mode, this needs to be longer
   delay(1000);
 
-  readDHT2Statsd("balcony");
+  readDHT2Statsd(statsdTag);
   // make sure data is sent
   delay(100);
 
