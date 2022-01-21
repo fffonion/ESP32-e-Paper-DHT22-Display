@@ -7,6 +7,8 @@
 
 #include <Preferences.h>
 
+#include "esp32_ctrl.h"
+
 void InitialiseDisplay();
 
 void DrawMainSection(float t, float h);

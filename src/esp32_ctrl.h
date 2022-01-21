@@ -24,4 +24,12 @@ void StopWiFi();
 void SetupOTA();
 void HandleOTA();
 
+typedef struct {
+    float voltage;
+    float percentage;
+} BatteryVoltage;
+
+BatteryVoltage GetBatteryVoltage();
+BatteryVoltage GetBatteryVoltage(bool cached);
+
 #endif

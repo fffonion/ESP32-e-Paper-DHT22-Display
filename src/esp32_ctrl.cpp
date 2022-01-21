@@ -244,3 +244,30 @@ void HandleOTA()
 {
   ArduinoOTA.handle();
 }
+
+BatteryVoltage cachedBv;
+
+BatteryVoltage GetBatteryVoltage() {
+  return GetBatteryVoltage(false);
+}
+
+BatteryVoltage GetBatteryVoltage(bool cached) {
+  if(cached) return cachedBv;
+
+  BatteryVoltage bv;
+  bv.percentage = 100;
+  bv.voltage = analogRead(35) / 4096.0 * 7.46;
+  if (bv.voltage > 1)
+  {
+    bv.percentage = 2836.9625 * pow(bv.voltage, 4) - 43987.4889 * pow(bv.voltage, 3) + 255233.8134 * pow(bv.voltage, 2) - 656689.7123 * bv.voltage + 632041.7303;
+    if (bv.voltage >= 4.20)
+      bv.percentage = 100;
+    if (bv.voltage <= 3.50)
+      bv.percentage = 0;
+    cachedBv = bv;
+    return bv;
+  } else {
+    BatteryVoltage ev;
+    return ev;
+  }
+}

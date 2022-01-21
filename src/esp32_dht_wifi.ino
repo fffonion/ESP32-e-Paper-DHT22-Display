@@ -114,6 +114,11 @@ void readDHT2Statsd(const char *location)
       sprintf(buf, "env.humidity.%s.esp32:%.2f|g\n", location, h);
       Udp.write(pbuf, strlen(buf));
     }
+
+    BatteryVoltage bv = GetBatteryVoltage(true);
+    sprintf(buf, "env.voltage.%s.esp32:%.2f|g\n", location, bv.voltage);
+    Udp.write(pbuf, strlen(buf));
+
     Udp.endPacket();
   }
   else
