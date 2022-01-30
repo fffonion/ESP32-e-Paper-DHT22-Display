@@ -9,9 +9,9 @@
 #include "display.h"
 
 #if __has_include("myconfig.h")
-  #include "myconfig.h"
+#include "myconfig.h"
 #else
-  #include "myconfig.example.h"
+#include "myconfig.example.h"
 #endif
 
 #define STATSD "10.0.0.50"
@@ -44,18 +44,25 @@ void blink()
 {
   // on
   digitalWrite(LED, HIGH);
-  delay(50);
+  delay(25);
   // off
   digitalWrite(LED, LOW);
   delay(50);
 }
 
-void readDHT2Statsd(const char *location)
+void readDHT2Statsd(const char *location, uint8_t tries)
 {
-  float h = dht.readHumidity(true);
-  // Read temperature as Celsius
-  float t = dht.readTemperature(false);
-  float f = 0;
+  float h, t, f = 0;
+  for (uint8_t i = 0; i < tries; i++)
+  {
+    h = dht.readHumidity(true);
+    // Read temperature as Celsius
+    t = dht.readTemperature(false);
+    if (!isnan(h) && !isnan(t))
+      break;
+    blink();
+    delay(500);
+  }
 
   boolean fail = false;
 
@@ -71,7 +78,7 @@ void readDHT2Statsd(const char *location)
   {
     // Read temperature as Fahrenheit
     f = t * 1.8 + 32;
-    blink();
+    //blink();
   }
 
   DrawMainSection(t, h);
@@ -88,12 +95,12 @@ void readDHT2Statsd(const char *location)
 
   if (!sendUDP)
     return;
-  blink();
+  //blink();
   DrawRSSISection(0);
 
   if (StartWiFi() == WL_CONNECTED)
   {
-    blink();
+    //blink();
     DrawRSSISection(WiFi.RSSI());
     char buf[200];
     const uint8_t *pbuf = (uint8_t *)buf;
@@ -131,6 +138,7 @@ void readDHT2Statsd(const char *location)
 
 void setup()
 {
+  setCpuFrequencyMhz(80);
   WiFi.mode(WIFI_OFF);
   btStop();
 
@@ -142,17 +150,21 @@ void setup()
 
   Serial.println("started");
 
-  if(digitalRead(ALT_BUTTON) == LOW) { // is long press
+  if (digitalRead(ALT_BUTTON) == LOW)
+  { // is long press
     digitalWrite(LED, HIGH);
     delay(2000);
     digitalWrite(LED, LOW);
     // long press shorter than 2s, setup OTA
     // otherwise we will enter smartconfig reset
-    if(digitalRead(ALT_BUTTON) == HIGH) {
+    if (digitalRead(ALT_BUTTON) == HIGH)
+    {
       DrawRSSISection(0);
-      if (StartWiFi() == WL_CONNECTED) {
+      if (StartWiFi() == WL_CONNECTED)
+      {
         digitalWrite(LED, HIGH);
         SetupOTA();
+        DrawRSSISection(-1);
         return;
       } // otherwise, goto smartconfig reset
     }
@@ -166,17 +178,18 @@ void setup()
   }
 
   pinMode(PIN3v3, OUTPUT);
-  digitalWrite(PIN3v3, 1);
+  digitalWrite(PIN3v3, HIGH);
   // Reading temperature or humidity takes about 250 milliseconds!
   // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
   // force = true
   // in deep sleep mode, this needs to be longer
-  delay(1000);
+  delay(1500);
 
-  readDHT2Statsd(statsdTag);
+  readDHT2Statsd(statsdTag, 3);
   // make sure data is sent
   delay(100);
 
+  digitalWrite(PIN3v3, LOW);
   DisplaySleep();
   BeginSleep(false, sendUDP ? SLEEP_HAS_WIFI : SLEEP_NO_WIFI);
 }
@@ -184,4 +197,5 @@ void setup()
 void loop()
 {
   HandleOTA();
+  digitalWrite(LED, LOW);
 }

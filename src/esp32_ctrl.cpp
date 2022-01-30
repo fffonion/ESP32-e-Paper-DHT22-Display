@@ -1,9 +1,9 @@
 #include "esp32_ctrl.h"
 
 #if __has_include("myconfig.h")
-    #include "myconfig.h"
+#include "myconfig.h"
 #else
-    #include "myconfig.example.h"
+#include "myconfig.example.h"
 #endif
 
 long StartTime = 0;
@@ -53,6 +53,9 @@ void BeginSleep(bool notimer, int sleepTime)
   adc_power_off();
   esp_wifi_stop();
   esp_bt_controller_disable();
+  pinMode(13, OUTPUT);
+  digitalWrite(13, HIGH); // sleep flash
+  gpio_deep_sleep_hold_en();
   long SleepTimer = sleepTime * 60; //Some ESP32 are too fast to maintain accurate time
   // if ( (NightSleepStart < NightSleepEnd && CurrentHour > NightSleepStart && CurrentHour < NightSleepEnd) ||
   //   (NightSleepStart > NightSleepEnd && (CurrentHour > NightSleepStart || CurrentHour < NightSleepEnd)) ) {
@@ -148,9 +151,9 @@ uint8_t StartWiFi()
   {
     return WL_NO_SSID_AVAIL;
   }
-  #ifdef useStaticIP
-  WiFi.config(ip, gateway, subnet);
-  #endif
+#ifdef useStaticIP
+  WiFi.config(ip, gateway, subnet, gateway);
+#endif
   //IPAddress dns(8, 8, 8, 8); // Google DNS
   WiFi.setAutoConnect(false);
   WiFi.setAutoReconnect(false);
@@ -247,12 +250,15 @@ void HandleOTA()
 
 BatteryVoltage cachedBv;
 
-BatteryVoltage GetBatteryVoltage() {
+BatteryVoltage GetBatteryVoltage()
+{
   return GetBatteryVoltage(false);
 }
 
-BatteryVoltage GetBatteryVoltage(bool cached) {
-  if(cached) return cachedBv;
+BatteryVoltage GetBatteryVoltage(bool cached)
+{
+  if (cached)
+    return cachedBv;
 
   BatteryVoltage bv;
   bv.percentage = 100;
@@ -266,7 +272,9 @@ BatteryVoltage GetBatteryVoltage(bool cached) {
       bv.percentage = 0;
     cachedBv = bv;
     return bv;
-  } else {
+  }
+  else
+  {
     BatteryVoltage ev;
     return ev;
   }

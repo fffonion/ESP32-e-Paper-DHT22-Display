@@ -70,6 +70,7 @@ void DrawBattery(int x, int y)
     display.drawRect(x + 15, y - 12, 19, 10, GxEPD_BLACK);
     display.fillRect(x + 34, y - 10, 2, 5, GxEPD_BLACK);
     display.fillRect(x + 17, y - 10, 15 * bv.percentage / 100.0, 6, GxEPD_BLACK);
+    u8g2Fonts.setFont(u8g2_font_helvB08_tf);
     drawString(x + 60, y - 11, String(bv.percentage, 0) + "%", RIGHT);
     //drawString(x + 13, y + 5,  String(voltage, 2) + "v", CENTER);
   }
@@ -98,6 +99,8 @@ void DrawRSSI(int x, int y, int rssi)
   //drawString(x + 5,  y + 5, String(rssi) + "dBm", CENTER);
 }
 
+RTC_DATA_ATTR float last_t, last_h = 0;
+
 void DrawMainSection(float t, float h)
 {
 
@@ -108,7 +111,7 @@ void DrawMainSection(float t, float h)
   {
     display.fillScreen(GxEPD_WHITE);
 
-    u8g2Fonts.setFont(u8g2_font_helvB08_tf);
+    // u8g2Fonts.setFont(u8g2_font_helvB08_tf);
     //display.drawRect(0,0,SCREEN_WIDTH,SCREEN_HEIGHT,GxEPD_BLACK);
     // - drawString(0, 2, time_str, LEFT);
     // u8g2Fonts.setFont(u8g2_font_5x7_tf);
@@ -118,26 +121,35 @@ void DrawMainSection(float t, float h)
     // drawString(SCREEN_WIDTH, 2, city_and_date, RIGHT);
     // - drawString(SCREEN_WIDTH+5, 2, date_str, RIGHT);
     // drawString(SCREEN_WIDTH, 1, date_str, RIGHT);
-    display.drawLine(0, 18, 130, 18, GxEPD_BLACK);
 
+    // if (bootCount != 1)
+    //   display.fillRect(0, 0, 130, 17, GxEPD_WHITE);
     DrawBattery(-10, 16);
 
-    String tt = isnan(t) ? String("?") : (String(t, 1) + "°");
-    String hh = isnan(h) ? String("?") : String(h, 1);
+    display.drawLine(0, 18, 130, 18, GxEPD_BLACK);
 
+    t = isnan(t) ? last_t: t;
+    last_t = t;
+    // if (bootCount != 1)
+    //   display.fillRect(0, 19, 130, 79, GxEPD_WHITE);
     u8g2Fonts.setFont(u8g2_font_streamline_weather_t);
     drawString(5, 55, String(char(48 + 6)), LEFT);
     u8g2Fonts.setFont(u8g2_font_logisoso34_tf);
-    drawString(35, 60, tt, LEFT);
+    drawString(35, 60, String(t, 1) + "°", LEFT);
 
     display.drawLine(5, 80, 130, 80, GxEPD_BLACK);
 
+    h = isnan(h) ? last_h: h;
+    last_h = h;
+    // if (bootCount != 1)
+    //   display.fillRect(0, 81, 130, SCREEN_HEIGHT, GxEPD_WHITE);
     u8g2Fonts.setFont(u8g2_font_streamline_ecology_t);
     drawString(5, 105, String(char(48 + 10)), LEFT);
     u8g2Fonts.setFont(u8g2_font_logisoso20_tf);
-    drawString(40, 105, hh, LEFT);
+    drawString(40, 105, String(h, 1), LEFT);
     u8g2Fonts.setFont(u8g2_font_helvB08_tf);
     drawString(95, 95, "%", LEFT);
+
   } while (display.nextPage());
 }
 
@@ -153,6 +165,11 @@ void DrawRSSISection(int rssi)
     {
       u8g2Fonts.setFont(u8g2_font_streamline_internet_network_t);
       drawString(110, 9, String(char(48 + 8)), LEFT); // connect+smile icon
+    }
+    else if (rssi == -1)
+    {
+      u8g2Fonts.setFont(u8g2_font_streamline_internet_network_t);
+      drawString(110, 9, String(char(48 + 3)), LEFT); // connect+download icon
     }
     else
       DrawRSSI(110, 14, rssi);
@@ -195,6 +212,8 @@ void DrawGraph(int x_pos, int y_pos, int gwidth, int gheight, float Y1Min, float
   // Draw the data
   for (int gx = 1; gx < readings; gx++)
   {
+    if (isnan(DataArray[gx]))
+      continue;
     x1 = last_x;
     y1 = last_y;
     x2 = x_pos + gx * gwidth / (readings - 1) - 1; // max_readings is the global variable that sets the maximum data that can be plotted
@@ -268,8 +287,8 @@ void DrawStatistics(float t, float h, int intervalMinutes)
       history.temperature_readings[i] = history.temperature_readings[i + 1];
       history.humidity_readings[i] = history.humidity_readings[i + 1];
     }
-    history.temperature_readings[max_readings - 1] = isnan(t) ? 0 : t;
-    history.humidity_readings[max_readings - 1] = isnan(h) ? 0 : h;
+    history.temperature_readings[max_readings - 1] = t;
+    history.humidity_readings[max_readings - 1] = h;
     prefs.putBytes("history", &history, sizeof(history));
 
     display.setPartialWindow(130, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
