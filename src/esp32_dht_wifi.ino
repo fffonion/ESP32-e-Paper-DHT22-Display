@@ -100,8 +100,9 @@ void readDHT2Statsd(const char *location, uint8_t tries)
 
   if (StartWiFi() == WL_CONNECTED)
   {
+    int rssi = WiFi.RSSI();
     //blink();
-    DrawRSSISection(WiFi.RSSI());
+    DrawRSSISection(rssi);
     char buf[200];
     const uint8_t *pbuf = (uint8_t *)buf;
     Udp.beginPacket(STATSD, 9125);
@@ -124,6 +125,8 @@ void readDHT2Statsd(const char *location, uint8_t tries)
 
     BatteryVoltage bv = GetBatteryVoltage(true);
     sprintf(buf, "env.voltage.%s.esp32:%.2f|g\n", location, bv.voltage);
+    Udp.write(pbuf, strlen(buf));
+    sprintf(buf, "env.rssi.%s.esp32:%d|g\n", location, rssi);
     Udp.write(pbuf, strlen(buf));
 
     Udp.endPacket();
