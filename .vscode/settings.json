@@ -1,6 +1,0 @@
-{
-    "files.associations": {
-        "*.in_": "cpp",
-        "cmath": "cpp"
-    }
-}

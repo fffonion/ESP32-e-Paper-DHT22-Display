@@ -18,6 +18,13 @@ void DrawStatistics(float t, float h, int intervalMinutes);
 
 void DisplaySleep();
 
+#define NightSleepStart 1
+#define NightSleepEnd   9
+#define DaySleepStart   10
+#define DaySleepEnd     17
+
+bool ShouldDisplay();
+
 const uint8_t u8g2_font_streamline_weather_t[586] U8G2_FONT_SECTION("u8g2_font_streamline_weather_t") =
     "\12\0\4\2\5\5\3\3\6\25\25\0\0\25\0\25\0\0\0\0\0\2-\60.U\322\265\347\1\241\332"
     "\134\36\260\36\334j\6\313\334 \241J\16\223\253A\60S\24K%ba=H\17\322\203\364\230H\36"

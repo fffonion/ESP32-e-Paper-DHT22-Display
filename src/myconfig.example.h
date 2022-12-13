@@ -13,4 +13,11 @@
 #define gateway IPAddress(10, 0, 0, 1)
 #define subnet IPAddress(255, 255, 255, 0)
 
+// #define drawLess // uncomment to draw regardless of night and weekday, need to setup following to get correct time
+
+#define ntpServer "cn.pool.ntp.org" // NTP server
+#define gmtOffset 8 // Timezone: GMT+8
+#define timezone "CST-8"
+
+
 #endif

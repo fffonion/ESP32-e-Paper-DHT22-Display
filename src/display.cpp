@@ -1,5 +1,11 @@
 #include <display.h>
 
+#if __has_include("myconfig.h")
+#include "myconfig.h"
+#else
+#include "myconfig.example.h"
+#endif
+
 // #define DRAW_GRID 1   //Help debug layout changes
 #define SCREEN_WIDTH 250
 #define SCREEN_HEIGHT 122
@@ -28,6 +34,8 @@ RTC_DATA_ATTR int bootCount = 0;
 
 void InitialiseDisplay()
 {
+  if(!ShouldDisplay()) return;
+
   bootCount = bootCount % 20; // full update after 20 partial updates
   Serial.println("Begin InitialiseDisplay ...");
   display.init(115200, bootCount++ == 0, 2, false);
@@ -63,6 +71,8 @@ void drawString(int x, int y, String text, alignmentType alignment)
 //#########################################################################################
 void DrawBattery(int x, int y)
 {
+  if(!ShouldDisplay()) return;
+
   BatteryVoltage bv = GetBatteryVoltage();
   if (bv.voltage > 1)
   { // Only display if there is a valid reading
@@ -78,6 +88,8 @@ void DrawBattery(int x, int y)
 //#########################################################################################
 void DrawRSSI(int x, int y, int rssi)
 {
+  if(!ShouldDisplay()) return;
+
   int WIFIsignal = 0;
   int xpos = 1;
   for (int _rssi = -100; _rssi <= rssi; _rssi = _rssi + 20)
@@ -103,6 +115,7 @@ RTC_DATA_ATTR float last_t, last_h = 0;
 
 void DrawMainSection(float t, float h)
 {
+  if(!ShouldDisplay()) return;
 
   display.setPartialWindow(0, 0, 130, SCREEN_HEIGHT);
 
@@ -155,6 +168,8 @@ void DrawMainSection(float t, float h)
 
 void DrawRSSISection(int rssi)
 {
+  if(!ShouldDisplay()) return;
+
   display.setPartialWindow(110, 0, 25, 18);
 
   display.firstPage();
@@ -178,6 +193,8 @@ void DrawRSSISection(int rssi)
 
 void DrawGraph(int x_pos, int y_pos, int gwidth, int gheight, float Y1Min, float Y1Max, String title, float DataArray[], int readings, boolean auto_scale, boolean barchart_mode)
 {
+  if(!ShouldDisplay()) return;
+
 #define auto_scale_margin 0 // Sets the autoscale increment, so axis steps up in units of e.g. 3
 #define y_minor_axis 3      // 5 y-axis division markers
   float maxYscale = -10000;
@@ -275,6 +292,8 @@ Preferences prefs;
 
 void DrawStatistics(float t, float h, int intervalMinutes)
 {
+  if(!ShouldDisplay()) return;
+
   intervalSpent += intervalMinutes;
   if (intervalSpent == intervalMinutes || intervalSpent > gInterval || bootCount == 1)
   {
@@ -311,4 +330,72 @@ void Display()
 void DisplaySleep()
 {
   display.powerOff();
+}
+
+RTC_DATA_ATTR int lastUpdateNTP = 0;
+
+#define NTPUpdateThreshold 7*3600
+
+tm setupTime() {
+  if (lastUpdateNTP == 0) {
+    Serial.println("Running NTP");
+    configTime(gmtOffset * 3600, 0, ntpServer, ntpServer); //(gmtOffset_sec, daylightOffset_sec, ntpServer)
+  }
+  setenv("TZ", timezone, 1);  //setenv()adds the "TZ" variable to the environment with a value TimeZone, only used if set to 1, 0 means no change
+  tzset(); // Set the TZ environment variable
+  delay(100);
+
+  struct tm timeinfo = tm{0};
+  if (!getLocalTime(&timeinfo, 5000)) { // Wait for 5-sec for time to synchronise
+    Serial.println("Failed to obtain time");
+  } else {
+    time_t tm = time(NULL);
+    if (lastUpdateNTP > 0 && (tm < lastUpdateNTP || tm - lastUpdateNTP > NTPUpdateThreshold)) {
+      lastUpdateNTP = 0;
+    } else {
+      lastUpdateNTP = tm;
+    }
+  }
+  return timeinfo;
+}
+
+bool ShouldDisplay() {
+#ifndef drawLess
+  return true;
+#else
+  // no wifi, refresh this time
+  if (WiFi.status() != WL_CONNECTED) {
+    // Serial.println("display because no wifi");
+    return true;
+  }
+
+  struct tm timeinfo = setupTime();
+  int CurrentHour = timeinfo.tm_hour;
+  int CurrentWday = timeinfo.tm_wday;
+
+  esp_sleep_wakeup_cause_t wakeup_reason;
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+
+  if (wakeup_reason<1 || wakeup_reason > 5) {
+    // not wake from deep sleep, refresh this time
+    // Serial.println("display because not from deep sleep");
+    return true;
+  }
+
+  if (CurrentHour == 0 && CurrentWday == 0) { // failure, assume true
+    return true;
+  } else if ( (NightSleepStart < NightSleepEnd && CurrentHour > NightSleepStart && CurrentHour < NightSleepEnd) ||
+    (NightSleepStart > NightSleepEnd && (CurrentHour > NightSleepStart || CurrentHour < NightSleepEnd)) ) {
+    // good night
+    Serial.println("not displaying because of night sleep");
+    return false;
+  } else if ( CurrentWday > 0 && CurrentWday < 6 && // 1,2,3,4,5 is work day
+    CurrentHour > DaySleepStart && CurrentHour < DaySleepEnd ) {
+    // good day
+    Serial.println("not displaying because of day sleep");
+    return false;
+  }
+  // Serial.println("display because of other reason");
+  return true;
+#endif
 }
