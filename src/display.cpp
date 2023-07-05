@@ -113,7 +113,7 @@ void DrawRSSI(int x, int y, int rssi)
 
 RTC_DATA_ATTR float last_t, last_h = 0;
 
-void DrawMainSection(float t, float h)
+void DrawMainSection(float t, float h, float hi)
 {
   if(!ShouldDisplay()) return;
 
@@ -148,7 +148,7 @@ void DrawMainSection(float t, float h)
     u8g2Fonts.setFont(u8g2_font_streamline_weather_t);
     drawString(5, 55, String(char(48 + 6)), LEFT);
     u8g2Fonts.setFont(u8g2_font_logisoso34_tf);
-    drawString(35, 60, String(t, 1) + "°", LEFT);
+    drawString(35, 63, String(t, 1) + "°", LEFT);
 
     display.drawLine(5, 80, 130, 80, GxEPD_BLACK);
 
@@ -162,13 +162,15 @@ void DrawMainSection(float t, float h)
     drawString(40, 105, String(h, 1), LEFT);
     u8g2Fonts.setFont(u8g2_font_helvB08_tf);
     drawString(95, 95, "%", LEFT);
+    u8g2Fonts.setFont(u8g2_font_missingplanet_tf);
+    drawString(110, 105, String(hi, 1), LEFT);
 
   } while (display.nextPage());
 }
 
 void DrawRSSISection(int rssi)
 {
-  if(!ShouldDisplay()) return;
+  // if(!ShouldDisplay()) return;
 
   display.setPartialWindow(110, 0, 25, 18);
 

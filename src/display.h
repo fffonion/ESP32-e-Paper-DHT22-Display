@@ -11,7 +11,7 @@
 
 void InitialiseDisplay();
 
-void DrawMainSection(float t, float h);
+void DrawMainSection(float t, float h, float hi);
 void DrawRSSISection(int rssi);
 
 void DrawStatistics(float t, float h, int intervalMinutes);

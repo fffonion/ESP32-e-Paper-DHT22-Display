@@ -7,6 +7,7 @@
 
 #include "esp32_ctrl.h"
 #include "display.h"
+#include "calc.h"
 
 #if __has_include("myconfig.h")
 #include "myconfig.h"
@@ -81,7 +82,10 @@ void readDHT2Statsd(const char *location, uint8_t tries)
     //blink();
   }
 
-  DrawMainSection(t, h);
+  double hi = heatIndex(f, h);
+  hi = (hi - 32) / 1.8; // FtoC
+
+  DrawMainSection(t, h, hi);
   DrawStatistics(t, h, sendUDP ? SLEEP_HAS_WIFI : SLEEP_NO_WIFI);
 
   //  Serial.print("Humidity: ");
